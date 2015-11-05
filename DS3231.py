@@ -16,24 +16,27 @@ class DS3231:
         self.rtc = RTC()
         
     def loadTime(self):
-        data = self.ds3231.readfrom_mem(DS3231_I2C_ADDR, 0, 7)
-        ss=bcd2dec(data[0] & 0b01111111)
-        mm=bcd2dec(data[1] & 0b01111111)
-        if data[2] & 0b01000000 > 0:
-            hh=bcd2dec(data[2] & 0b00011111)
-            if data[2] & 0b00100000 >0:
-                hh+=12
+        if DS3231_I2C_ADDR in self.ds3231.scan():
+            data = self.ds3231.readfrom_mem(DS3231_I2C_ADDR, 0, 7)
+            ss=bcd2dec(data[0] & 0b01111111)
+            mm=bcd2dec(data[1] & 0b01111111)
+            if data[2] & 0b01000000 > 0:
+                hh=bcd2dec(data[2] & 0b00011111)
+                if data[2] & 0b00100000 >0:
+                    hh+=12
+            else:
+                hh=bcd2dec(data[2] & 0b00111111)
+            DD=bcd2dec(data[4] & 0b00111111)
+            MM=bcd2dec(data[5] & 0b00011111)
+            YY=bcd2dec(data[6])
+            if data[5] & 0b10000000 > 0:
+                YY=YY+2000
+            else:
+                YY=YY+1900
+            self.rtc.init((YY,MM,DD,hh,mm,ss))
         else:
-            hh=bcd2dec(data[2] & 0b00111111)
-        DD=bcd2dec(data[4] & 0b00111111)
-        MM=bcd2dec(data[5] & 0b00011111)
-        YY=bcd2dec(data[6])
-        if data[5] & 0b10000000 > 0:
-            YY=YY+2000
-        else:
-            YY=YY+1900
-        self.rtc.init((YY,MM,DD,hh,mm,ss))
-        
+            print("DS3231 not found on I2C bus at %d" % DS3231_I2C_ADDR)
+
 
     def saveTime(self):
         (YY,MM,DD,hh,mm,ss,micro,tz) = self.rtc.now()
